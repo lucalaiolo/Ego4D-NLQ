@@ -2,7 +2,8 @@
 """
 import torch
 import torch.nn as nn
-from transformers import AdamW, get_linear_schedule_with_warmup
+import torch.optim.optimizer
+from transformers import get_linear_schedule_with_warmup
 
 from model.layers import (
     Embedding,
@@ -40,7 +41,7 @@ def build_optimizer_and_scheduler(model, configs):
             "weight_decay": 0.0,
         },
     ]
-    optimizer = AdamW(optimizer_grouped_parameters, lr=configs.init_lr)
+    optimizer = torch.optim.AdamW(optimizer_grouped_parameters, lr=configs.init_lr)
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
         configs.num_train_steps * configs.warmup_proportion,

@@ -6,8 +6,6 @@ Prepare Ego4d episodic memory NLQ for model training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import collections
-import csv
 import json
 import math
 import os
