@@ -82,6 +82,7 @@ def visual_feature_sampling(visual_feature, max_num_clips):
 
 
 def compute_overlap(pred, gt):
+    '''Compute intersection-over-union (IoU) between predicted and ground truth time segments'''
     # check format
     assert isinstance(pred, list) and isinstance(gt, list)
     pred_is_list = isinstance(pred[0], list)
@@ -118,7 +119,7 @@ def time_to_index(start_time, end_time, num_units, duration):
     overlaps = compute_overlap(candidates.tolist(), [start_time, end_time]).reshape(
         num_units, num_units
     )
-    start_index = np.argmax(overlaps) // num_units
+    start_index = np.argmax(overlaps) // num_units # np.argmax flattens the matrix automatically
     end_index = np.argmax(overlaps) % num_units
     return start_index, end_index, overlaps
 
@@ -134,6 +135,7 @@ def index_to_time(start_index, end_index, num_units, duration):
 
 
 def pad_seq(sequences, pad_tok=None, max_length=None):
+    '''Pad or truncate a list of token sequences to a uniform length'''
     if pad_tok is None:
         pad_tok = 0  # 0: "PAD" for words and chars, "PAD" for tags
     if max_length is None:
@@ -164,6 +166,7 @@ def pad_char_seq(sequences, max_length=None, max_length_2=None):
 
 
 def pad_video_seq(sequences, max_length=None):
+    '''Pad a list of variable-length video feature arrays along the time axis'''
     if max_length is None:
         max_length = max([vfeat.shape[0] for vfeat in sequences])
     feature_length = sequences[0].shape[1]
