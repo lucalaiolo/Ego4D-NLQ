@@ -51,6 +51,7 @@ def get_last_checkpoint(model_dir, suffix="t7"):
 
 
 def convert_length_to_mask(lengths):
+    # lengths has shape (batch_size, )
     max_len = lengths.max().item()
     mask = torch.arange(max_len, device=lengths.device).expand(
         lengths.size()[0], max_len

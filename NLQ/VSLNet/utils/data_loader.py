@@ -58,7 +58,7 @@ def train_collate_fn(data):
     s_labels = np.asarray(s_inds, dtype=np.int64)
     e_labels = np.asarray(e_inds, dtype=np.int64)
     h_labels = np.zeros(shape=[batch_size, max_len], dtype=np.int32)
-    extend = 0.1    # alpha hyperparameter in the original paper
+    extend = 0.1
     for idx in range(batch_size):
         st, et = s_inds[idx], e_inds[idx]
         cur_max_len = vfeat_lens[idx]

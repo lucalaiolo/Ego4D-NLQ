@@ -26,7 +26,7 @@ from utils.runner_utils import (
 def main(configs, parser):
     print(f"Running with {configs}", flush=True)
 
-    # set tensorflow configs
+    # set torch configs
     set_th_config(configs.seed)
 
     # prepare or load dataset
@@ -136,7 +136,7 @@ def main(configs, parser):
                 )
                 if configs.predictor == "bert":
                     word_ids = {key: val.to(device) for key, val in word_ids.items()}
-                    # generate mask
+                    # generate mask that’s 1 for “real” tokens and 0 for padding
                     query_mask = (
                         (
                             torch.zeros_like(word_ids["input_ids"])

@@ -190,7 +190,7 @@ class VisualProjection(nn.Module):
             stride=1,
             bias=True,
             padding=0,
-        )
+        ) # it acts as a shared linear map applied at every sequence position
 
     def forward(self, visual_features):
         # the input visual feature with shape (batch_size, seq_len, visual_dim)
@@ -340,6 +340,7 @@ class FeatureEncoder(nn.Module):
 
 
 class CQAttention(nn.Module):
+    '''Context-query attention'''
     def __init__(self, dim, drop_rate=0.0):
         super(CQAttention, self).__init__()
         w4C = torch.empty(dim, 1)
@@ -378,6 +379,7 @@ class CQAttention(nn.Module):
         return output
 
     def trilinear_attention(self, context, query):
+        '''Computes the trilinear_attention as in Seo et al., (2016)'''
         batch_size, c_seq_len, dim = context.shape
         batch_size, q_seq_len, dim = query.shape
         context = self.dropout(context)
@@ -401,11 +403,13 @@ class WeightedPool(nn.Module):
         self.weight = nn.Parameter(weight, requires_grad=True)
 
     def forward(self, x, mask):
+        # x has shape  (batch_size, seq_length, dim)
+        # mask has shape (batch_size, seq_length)
         alpha = torch.tensordot(
             x, self.weight, dims=1
         )  # shape = (batch_size, seq_length, 1)
         alpha = mask_logits(alpha, mask=mask.unsqueeze(2))
-        alphas = nn.Softmax(dim=1)(alpha)
+        alphas = nn.Softmax(dim=1)(alpha)   # (batch_size, seq_length, 1)
         pooled_x = torch.matmul(x.transpose(1, 2), alphas)  # (batch_size, dim, 1)
         pooled_x = pooled_x.squeeze(2)
         return pooled_x
@@ -428,7 +432,7 @@ class CQConcatenate(nn.Module):
         output = torch.cat(
             [context, pooled_query], dim=2
         )  # (batch_size, c_seq_len, 2*dim)
-        output = self.conv1d(output)
+        output = self.conv1d(output) # (batch_size, c_seq_len, dim)
         return output
 
 
@@ -440,9 +444,11 @@ class HighLightLayer(nn.Module):
         )
 
     def forward(self, x, mask):
+        # x has shape (batch_size, c_seq_len, dim)
+        # mask has shape (batch_size, c_seq_len)
         # compute logits
-        logits = self.conv1d(x)
-        logits = logits.squeeze(2)
+        logits = self.conv1d(x)     # (batch_size, c_seq_len, 1)
+        logits = logits.squeeze(2)  # (batch_size, c_seq_len)
         logits = mask_logits(logits, mask)
         # compute score
         scores = nn.Sigmoid()(logits)
@@ -450,6 +456,11 @@ class HighLightLayer(nn.Module):
 
     @staticmethod
     def compute_loss(scores, labels, mask, epsilon=1e-12):
+        '''
+        Compute the loss function of the query-guided highlighting.
+        The loss is defined as a weighted binary cross entropy loss,
+        where positive labels are weighted twice as much as negative labels
+        '''
         labels = labels.type(torch.float32)
         weights = torch.where(labels == 0.0, labels + 1.0, 2.0 * labels)
         loss_per_location = nn.BCELoss(reduction="none")(scores, labels)
@@ -549,7 +560,7 @@ class ConditionedPredictor(nn.Module):
         start_prob = nn.Softmax(dim=1)(start_logits)
         end_prob = nn.Softmax(dim=1)(end_logits)
         outer = torch.matmul(start_prob.unsqueeze(dim=2), end_prob.unsqueeze(dim=1))
-        outer = torch.triu(outer, diagonal=0)
+        outer = torch.triu(outer, diagonal=0) # mask illegal spans (end before start)
 
         # _, start_index = torch.max(torch.max(outer, dim=2)[0], dim=1)  # (batch_size, )
         # _, end_index = torch.max(torch.max(outer, dim=1)[0], dim=1)  # (batch_size, )
