@@ -115,6 +115,7 @@ def test_collate_fn(data):
 
 def get_train_loader(dataset, video_features, configs):
     train_set = Dataset(dataset=dataset, video_features=video_features)
+    extend = configs.extend
     train_loader = torch.utils.data.DataLoader(
         dataset=train_set,
         batch_size=configs.batch_size,
