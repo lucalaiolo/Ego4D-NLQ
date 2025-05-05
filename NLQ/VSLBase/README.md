@@ -1,6 +1,6 @@
 # Span-based Localizing Network for Natural Language Video Localization
 
-This repository adapts the *PyTorch* implementation of the **VSLNet** baseline for the Ego4D: Natural Language
+This repository adapts the *PyTorch* implementation of the **VSLBase** baseline for the Ego4D: Natural Language
 Queries (NLQ) task ([ArXiv][arxiv_link], [webpage][ego4d_page]).
 The model is based on the paper "Span-based Localizing Network for Natural Language Video 
 Localization" (ACL 2020, long paper, [ACL](vslnet_acl), 
@@ -9,7 +9,7 @@ Localization" (ACL 2020, long paper, [ACL](vslnet_acl),
 
 ## Prerequisites
 
-This repository is based off [VSLNet][vslnet_code]. This has additional support for SLURM scheduling.
+This repository is based off [VSLBase][vslnet_code]. This has additional support for SLURM scheduling.
 
 ### Environment setup
 
@@ -84,7 +84,7 @@ python main.py \
 
 
 # To evaluate predictions using official evaluation script.
-PRED_FILE="checkpoints/vslnet_nlq_official_v1_official_512_bert/model"
+PRED_FILE="checkpoints/vslbase_nlq_official_v1_official_512_bert/model"
 python utils/evaluate_ego4d_nlq.py \
     --ground_truth_json data/nlq_val.json \
     --model_prediction_json ${PRED_FILE}/vslnet_0_357_preds.json \
