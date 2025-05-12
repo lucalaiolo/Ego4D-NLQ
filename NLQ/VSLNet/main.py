@@ -101,6 +101,8 @@ def main(configs, parser):
         model = VSLNet(
             configs=configs, word_vectors=dataset.get("word_vector", None)
         ).to(device)
+        if configs.predictor == "EgoVLP":
+            model.embedding_net.load_weights(configs.EgoVLP_text_encoder_weights_path)
         optimizer, scheduler = build_optimizer_and_scheduler(model, configs=configs)
         # start training
         best_metric = -1.0
@@ -134,7 +136,7 @@ def main(configs, parser):
                     e_labels.to(device),
                     h_labels.to(device),
                 )
-                if configs.predictor == "bert":
+                if configs.predictor == "bert" or configs.predictor == "roberta" or configs.predictor == "EgoVLP":
                     word_ids = {key: val.to(device) for key, val in word_ids.items()}
                     # generate mask that’s 1 for “real” tokens and 0 for padding
                     query_mask = (

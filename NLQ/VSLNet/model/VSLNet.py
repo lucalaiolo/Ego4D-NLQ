@@ -14,6 +14,8 @@ from model.layers import (
     ConditionedPredictor,
     HighLightLayer,
     BertEmbedding,
+    RoBERTaEmbedding,
+    EgoVLPEmbedding,
 )
 
 
@@ -88,6 +90,18 @@ class VSLNet(nn.Module):
             # init parameters
             self.init_parameters()
             self.embedding_net = BertEmbedding(configs.text_agnostic)
+        elif configs.predictor == "roberta":
+            # Project back from RoBERTa to dim.
+            self.query_affine = nn.Linear(768, configs.dim)
+            # init parameters
+            self.init_parameters()
+            self.embedding_net = RoBERTaEmbedding(configs.text_agnostic)     
+        elif self.configs.predictor == 'EgoVLP':
+            # Project back from DistilBERT to dim.
+            self.query_affine = nn.Linear(768, configs.dim)
+            # init parameters
+            self.init_parameters()
+            self.embedding_net = EgoVLPEmbedding(configs.text_agnostic)
         else:
             self.embedding_net = Embedding(
                 num_words=configs.word_size,
@@ -118,7 +132,7 @@ class VSLNet(nn.Module):
 
     def forward(self, word_ids, char_ids, video_features, v_mask, q_mask):
         video_features = self.video_affine(video_features)
-        if self.configs.predictor == "bert":
+        if self.configs.predictor == "bert" or self.configs.predictor == "roberta" or self.configs.predictor == "EgoVLP":
             query_features = self.embedding_net(word_ids)
             query_features = self.query_affine(query_features)
         else:

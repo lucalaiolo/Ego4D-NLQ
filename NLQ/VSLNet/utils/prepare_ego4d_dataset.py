@@ -104,26 +104,36 @@ def convert_ego4d_dataset(args):
 
     # Extract visual features based on the all_clip_video_map.
     feature_sizes = {}
-    os.makedirs(args["clip_feature_save_path"], exist_ok=True)
-    progress_bar = tqdm.tqdm(all_clip_video_map.items(), desc="Extracting features")
-    for clip_uid, (video_uid, start_sec, end_sec) in progress_bar:
-        feature_path = os.path.join(args["video_feature_read_path"], f"{video_uid}.pt")
-        feature = torch.load(feature_path)
+    if not args["use_clip_features_only"]:
+        os.makedirs(args["clip_feature_save_path"], exist_ok=True)
+        progress_bar = tqdm.tqdm(all_clip_video_map.items(), desc="Extracting features")
+        for clip_uid, (video_uid, start_sec, end_sec) in progress_bar:
+            feature_path = os.path.join(args["video_feature_read_path"], f"{video_uid}.pt")
+            feature = torch.load(feature_path)
 
-        # Get the lower frame (start_sec) and upper frame (end_sec) for the clip.
-        clip_start = get_nearest_frame(start_sec, math.floor)
-        clip_end = get_nearest_frame(end_sec, math.ceil)
-        clip_feature = feature[clip_start : clip_end + 1]
-        feature_sizes[clip_uid] = clip_feature.shape[0]
-        feature_save_path = os.path.join(
-            args["clip_feature_save_path"], f"{clip_uid}.pt"
-        )
-        torch.save(clip_feature, feature_save_path)
+            # Get the lower frame (start_sec) and upper frame (end_sec) for the clip.
+            clip_start = get_nearest_frame(start_sec, math.floor)
+            clip_end = get_nearest_frame(end_sec, math.ceil)
+            clip_feature = feature[clip_start : clip_end + 1]
+            feature_sizes[clip_uid] = clip_feature.shape[0]
+            feature_save_path = os.path.join(
+                args["clip_feature_save_path"], f"{clip_uid}.pt"
+            )
+            torch.save(clip_feature, feature_save_path)
 
-    save_path = os.path.join(args["clip_feature_save_path"], "feature_shapes.json")
-    with open(save_path, "w") as file_id:
-        json.dump(feature_sizes, file_id)
+        save_path = os.path.join(args["clip_feature_save_path"], "feature_shapes.json")
+        with open(save_path, "w") as file_id:
+            json.dump(feature_sizes, file_id)
+    else:
+        progress_bar = tqdm.tqdm(all_clip_video_map.items(), desc="Extracting features")
+        for clip_uid, (video_uid, start_sec, end_sec) in progress_bar:
+            feature_path = os.path.join(args["clip_feature_save_path"], f"{clip_uid}.pt")
+            feature = torch.load(feature_path)
 
+            feature_sizes[clip_uid] = feature.shape[0]
+        save_path = os.path.join(args["clip_feature_save_path"], "feature_shapes.json")
+        with open(save_path, "w") as file_id:
+            json.dump(feature_sizes, file_id)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -146,6 +156,11 @@ if __name__ == "__main__":
         "--clip_feature_save_path",
         required=True,
         help="Path to save clip video features",
+    )
+    parser.add_argument(
+        "--use_clip_features_only",
+        required=True,
+        help="Boolean value. If true, load clip features directly"
     )
     try:
         parsed_args = vars(parser.parse_args())

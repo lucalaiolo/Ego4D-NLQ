@@ -163,6 +163,45 @@ class BertEmbedding(nn.Module):
         outputs = self.embedder(**word_ids)
         return outputs["last_hidden_state"].detach()
 
+class RoBERTaEmbedding(nn.Module):
+    def __init__(self, text_agnostic=False):
+        super(RoBERTaEmbedding, self).__init__()
+        from transformers import RobertaModel, RobertaConfig
+
+        # Load pretrained RoBERTa model if not text agnostic, else random RoBERTa
+        if text_agnostic:
+            self.embedder = RobertaModel(RobertaConfig())
+        else:
+            self.embedder = RobertaModel.from_pretrained("FacebookAI/roberta-base")
+        # Freeze the model
+        for param in self.embedder.parameters():
+            param.requires_grad = False
+    
+    def forward(self, word_ids):
+        outputs = self.embedder(**word_ids)
+        return outputs["last_hidden_state"].detach()
+        
+
+class EgoVLPEmbedding(nn.Module):
+    def __init__(self, text_agnostic=False):
+        super(EgoVLPEmbedding, self).__init__()
+        from transformers import DistilBertModel, DistilBertConfig
+
+        # Load pretrained DistilBertModel if not text agnostic, else random RoBERTa
+        if text_agnostic:
+            self.embedder = DistilBertModel(DistilBertConfig())
+        else:
+            self.embedder = DistilBertModel.from_pretrained("distilbert-base-uncased")
+        # Freeze the model
+        for param in self.embedder.parameters():
+            param.requires_grad = False
+    
+    def load_weights(self, path):
+        self.embedder.load_state_dict(torch.load(path))
+
+    def forward(self, word_ids):
+        outputs = self.embedder(**word_ids)
+        return outputs["last_hidden_state"].detach()
 
 class PositionalEmbedding(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings."""

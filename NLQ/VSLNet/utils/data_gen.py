@@ -50,7 +50,8 @@ class EpisodicNLQProcessor:
             for timestamp, exact_time, sentence, ann_uid, query_idx in zipper:
                 start_time = max(0.0, float(timestamp[0]) / fps)
                 end_time = min(float(timestamp[1]) / fps, duration)
-                if self._predictor != "bert":
+
+                if self._predictor != "bert" and self._predictor != "roberta" and self._predictor != "EgoVLP":
                     words = word_tokenize(sentence.strip().lower(), language="english")
                 else:
                     words = sentence
@@ -78,7 +79,7 @@ class EpisodicNLQProcessor:
         print(f"{scope}: skipped = {skipped}, remaining = {len(results)}")
         return results
 
-    def convert(self, data_dir, predictor=None):
+    def convert(self, data_dir, configs, predictor=None):
         self._predictor = predictor
         self.reset_idx_counter()
         if not os.path.exists(data_dir):
@@ -286,6 +287,35 @@ def dataset_gen_bert(data, vfeat_lens, tokenizer, max_pos_len, scope, num_worker
         dataset.extend(collated_results[worker_id])
     return dataset
 
+def dataset_gen_EgoVLP(data, vfeat_lens, tokenizer, max_pos_len, scope, num_workers=1):
+    dataset = []
+    for record in tqdm(data):
+        vid = record["vid"]
+        if vid not in vfeat_lens:
+            continue
+        s_ind, e_ind, _ = time_to_index(
+            record["s_time"], record["e_time"], vfeat_lens[vid], record["duration"]
+        )
+        word_ids = tokenizer(record["query"])
+        result = {
+            "sample_id": record["sample_id"],
+            "vid": record["vid"],
+            "s_time": record["s_time"],
+            "e_time": record["e_time"],
+            "duration": record["duration"],
+            "words": record["words"],
+            "query": record["query"],
+            "s_ind": int(s_ind),
+            "e_ind": int(e_ind),
+            "v_len": vfeat_lens[vid],
+            "w_ids": word_ids,
+            "annotation_uid": record["annotation_uid"],
+            "query_idx": record["query_idx"],
+        }
+        dataset.append(result)
+    
+    return dataset
+
 
 def gen_or_load_dataset(configs):
     if not os.path.exists(configs.save_dir):
@@ -323,7 +353,7 @@ def gen_or_load_dataset(configs):
     processor = EpisodicNLQProcessor(configs.remove_empty_queries_from)
 
     train_data, val_data, test_data = processor.convert(
-        data_dir, predictor=configs.predictor
+        data_dir, configs, predictor=configs.predictor
     )
     # generate dataset
     data_list = (
@@ -331,10 +361,16 @@ def gen_or_load_dataset(configs):
         if val_data is None
         else [train_data, val_data, test_data]
     )
-    if configs.predictor == "bert":
-        from transformers import BertTokenizer, BertForPreTraining
+    if configs.predictor == "bert" or configs.predictor == "roberta":
+        if configs.predictor == "bert":
+            from transformers import BertTokenizer, BertForPreTraining
 
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+            tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+        else:
+            from transformers import RobertaTokenizer
+
+            tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+            
         train_set = dataset_gen_bert(
             train_data,
             vfeat_lens,
@@ -355,6 +391,46 @@ def gen_or_load_dataset(configs):
         else:
             val_set = None
         test_set = dataset_gen_bert(
+            test_data,
+            vfeat_lens,
+            tokenizer,
+            configs.max_pos_len,
+            "test",
+            num_workers=configs.num_workers,
+        )
+        n_val = 0 if val_set is None else len(val_set)
+        dataset = {
+            "train_set": train_set,
+            "val_set": val_set,
+            "test_set": test_set,
+            "n_train": len(train_set),
+            "n_val": n_val,
+            "n_test": len(test_set),
+        }
+    elif configs.predictor == "EgoVLP":
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        train_set = dataset_gen_EgoVLP(
+            train_data,
+            vfeat_lens,
+            tokenizer,
+            configs.max_pos_len,
+            "train",
+            num_workers=configs.num_workers,
+        )
+        if val_data:
+            val_set = dataset_gen_EgoVLP(
+                val_data,
+                vfeat_lens,
+                tokenizer,
+                configs.max_pos_len,
+                "val",
+                num_workers=configs.num_workers,
+            )
+        else:
+            val_set = None
+        test_set = dataset_gen_EgoVLP(
             test_data,
             vfeat_lens,
             tokenizer,

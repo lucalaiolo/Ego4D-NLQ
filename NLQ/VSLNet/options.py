@@ -75,7 +75,7 @@ def read_command_line():
     parser.add_argument("--num_heads", type=int, default=8, help="number of heads")
     parser.add_argument("--drop_rate", type=float, default=0.2, help="dropout rate")
     parser.add_argument(
-        "--predictor", type=str, default="rnn", help="[rnn | transformer]"
+        "--predictor", type=str, default="bert", help="[bert | roberta | EgoVLP | glove]"
     )
     # training/evaluation parameters
     parser.add_argument("--gpu_idx", type=str, default="0", help="GPU index")
@@ -145,6 +145,12 @@ def read_command_line():
         type=int,
         default=1,
         help="Log every `tb_log_freq` iterations",
+    )
+    parser.add_argument(
+        "--EgoVLP_text_encoder_weights_path",
+        type=str,
+        default=None,
+        help="Where the weights for the text encoder are located"
     )
     parser.add_argument(
         "--slurm",

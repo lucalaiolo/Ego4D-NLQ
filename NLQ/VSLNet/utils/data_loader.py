@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.utils.data
-
+from torch.nn.utils.rnn import pad_sequence
 from utils.data_util import pad_seq, pad_char_seq, pad_video_seq
 
 
@@ -26,16 +26,24 @@ def train_collate_fn(data):
     records, video_features, word_ids, char_ids, s_inds, e_inds = zip(*data)
     # If BERT is used, pad individual components of the dictionary.
     if not isinstance(word_ids[0], list):
-        # BERT-style
-        pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
-        pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
-        pad_token_type_ids, _ = pad_seq([ii["token_type_ids"] for ii in word_ids])
-        word_ids = {
-            "input_ids": torch.LongTensor(pad_input_ids),
-            "attention_mask": torch.LongTensor(pad_attention_mask),
-            "token_type_ids": torch.LongTensor(pad_token_type_ids),
-        }
-        char_ids = None
+        try:
+            pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
+            pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
+            pad_token_type_ids, _ = pad_seq([ii["token_type_ids"] for ii in word_ids])
+            word_ids = {
+                "input_ids": torch.LongTensor(pad_input_ids),
+                "attention_mask": torch.LongTensor(pad_attention_mask),
+                "token_type_ids": torch.LongTensor(pad_token_type_ids),
+            }
+            char_ids = None
+        except:
+            word_feats = pad_sequence([ii["input_ids"] for ii in word_ids], batch_first=True, padding_value=0.0)
+            word_masks, _ = pad_seq([ii["attention_mask"].squeeze().tolist() for ii in word_ids])
+            word_ids = {
+                    "input_ids": word_feats,
+                    "attention_mask": torch.LongTensor(word_masks),
+                }
+            char_ids = None 
     else:
         # Non-BERT-style
         # process word ids
@@ -83,15 +91,24 @@ def test_collate_fn(data):
     records, video_features, word_ids, char_ids, *_ = zip(*data)
     # If BERT is used, pad individual components of the dictionary.
     if not isinstance(word_ids[0], list):
-        pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
-        pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
-        pad_token_type_ids, _ = pad_seq([ii["token_type_ids"] for ii in word_ids])
-        word_ids = {
-            "input_ids": torch.LongTensor(pad_input_ids),
-            "attention_mask": torch.LongTensor(pad_attention_mask),
-            "token_type_ids": torch.LongTensor(pad_token_type_ids),
-        }
-        char_ids = None
+        try:
+            pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
+            pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
+            pad_token_type_ids, _ = pad_seq([ii["token_type_ids"] for ii in word_ids])
+            word_ids = {
+                "input_ids": torch.LongTensor(pad_input_ids),
+                "attention_mask": torch.LongTensor(pad_attention_mask),
+                "token_type_ids": torch.LongTensor(pad_token_type_ids),
+            }
+            char_ids = None
+        except:
+            word_feats = pad_sequence([ii["input_ids"] for ii in word_ids], batch_first=True, padding_value=0.0)
+            word_masks, _ = pad_seq([ii["attention_mask"].squeeze().tolist() for ii in word_ids])
+            word_ids = {
+                    "input_ids": word_feats,
+                    "attention_mask": torch.LongTensor(word_masks),
+                }
+            char_ids = None
     else:
         # process word ids
         word_ids, _ = pad_seq(word_ids)
@@ -103,6 +120,7 @@ def test_collate_fn(data):
         )  # (batch_size, w_seq_len, c_seq_len)
         word_ids = torch.tensor(word_ids, dtype=torch.int64)
         char_ids = torch.tensor(char_ids, dtype=torch.int64)
+    
     # process video features
     vfeats, vfeat_lens = pad_video_seq(video_features)
     vfeats = np.asarray(vfeats, dtype=np.float32)  # (batch_size, v_seq_len, v_dim)
