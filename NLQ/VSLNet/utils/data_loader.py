@@ -102,7 +102,7 @@ def test_collate_fn(data):
             }
             char_ids = None
         except:
-            word_feats = pad_sequence([ii["input_ids"] for ii in word_ids], batch_first=True, padding_value=0.0)
+            word_feats = pad_seq([ii["input_ids"] for ii in word_ids])
             word_masks, _ = pad_seq([ii["attention_mask"].squeeze().tolist() for ii in word_ids])
             word_ids = {
                     "input_ids": word_feats,

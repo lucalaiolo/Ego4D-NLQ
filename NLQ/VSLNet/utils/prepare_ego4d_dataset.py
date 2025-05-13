@@ -159,7 +159,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--use_clip_features_only",
-        required=True,
+        action='store_true',
         help="Boolean value. If true, load clip features directly"
     )
     try:
