@@ -43,10 +43,12 @@ def reformat_gt(gt_path):
             clip_uid = clip["clip_uid"]
             query_idx = 0
             for annotation in clip["annotations"]:
-                for query in annotation["language_queries"]:
-                    s_time = query["clip_start_sec"]
-                    e_time = query["clip_end_sec"]
-                    q = query["query"]
+                for ann in annotation["language_queries"]:
+                    s_time = ann["clip_start_sec"]
+                    e_time = ann["clip_end_sec"]
+                    if not 'query' in ann:
+                        continue
+                    q = ann['query']
                     reformat_data.append({
                         "clip_uid": clip_uid, 
                         "query_idx": query_idx, 
