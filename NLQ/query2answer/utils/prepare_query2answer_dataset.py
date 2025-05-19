@@ -36,28 +36,26 @@ def reformat_gt(gt_path):
     '''
     with open(gt_path, 'r', encoding='utf-8') as f:
         val_data = json.load(f)
-    val_data = val_data["videos"]
     reformat_data = []
-    for vid in val_data:
-        for clip in vid["clips"]:
-            clip_uid = clip["clip_uid"]
-            query_idx = 0
-            for annotation in clip["annotations"]:
-                for ann in annotation["language_queries"]:
-                    s_time = ann["clip_start_sec"]
-                    e_time = ann["clip_end_sec"]
-                    if not 'query' in ann:
-                        continue
-                    q = ann['query']
-                    reformat_data.append({
-                        "clip_uid": clip_uid, 
-                        "query_idx": query_idx, 
-                        "s_time": s_time, 
-                        "e_time": e_time,
-                        "query": q,
-                    })
-                    query_idx += 1
+    for clip_uid, datum in  val_data.items():
+        for times, queries, idx in zip(datum["exact_times"], datum["sentences"], datum["query_idx"]):
+            if not isinstance(times[0], list):
+              times = [times]
+            if not isinstance(queries, list):
+              queries = [queries]
+            if not isinstance(idx, list):
+              idx = [idx]
+            for i in range(len(times)):
+                assert len(times) == len(queries) and len(times) == len(idx)
+                reformat_data.append({
+                    "clip_uid": clip_uid,
+                    "query": queries[i],
+                    "s_time": times[i][0],
+                    "e_time": times[i][1],
+                    "query_idx": idx[i],
+                })
     new_path = gt_path.replace(".json", "_reformat.json")
+    reformat_data = {"data": reformat_data}
     with open(new_path, 'w', encoding='utf-8') as f:
         json.dump(reformat_data, f)
     return new_path
@@ -79,7 +77,7 @@ def get_top_predictions(predictions_path, gt_path, n):
         ground_truth = json.load(f)
 
     queries_list = []
-    for result,  gt in zip(predictions["results"], ground_truth):
+    for result,  gt in zip(predictions["results"], ground_truth["data"]):
         assert result["query_idx"] == gt["query_idx"] and result["clip_uid"] == gt["clip_uid"],\
             "Mismatch between predictions and ground truth"
         clip_uid = result["clip_uid"]
