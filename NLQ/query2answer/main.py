@@ -6,7 +6,7 @@ import options
 from transformers import BitsAndBytesConfig, VideoLlavaForConditionalGeneration, VideoLlavaProcessor
 import torch
 import numpy as np
-from utils import prepare_clip, cut_clip, build_prompt
+from utils.data_util import prepare_clip, cut_clip, build_prompt
 
 def main(configs):
     data_path = configs.data_path
