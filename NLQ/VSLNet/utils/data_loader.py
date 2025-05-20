@@ -80,24 +80,14 @@ def test_collate_fn(data):
     records, video_features, word_ids, char_ids, *_ = zip(*data)
     # If BERT is used, pad individual components of the dictionary.
     if not isinstance(word_ids[0], list):
-        try:
-            pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
-            pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
-            pad_token_type_ids, _ = pad_seq([ii["token_type_ids"] for ii in word_ids])
-            word_ids = {
-                "input_ids": torch.LongTensor(pad_input_ids),
-                "attention_mask": torch.LongTensor(pad_attention_mask),
-                "token_type_ids": torch.LongTensor(pad_token_type_ids),
-            }
-            char_ids = None
-        except:
-            word_feats = pad_seq([ii["input_ids"] for ii in word_ids])
-            word_masks, _ = pad_seq([ii["attention_mask"].squeeze().tolist() for ii in word_ids])
-            word_ids = {
-                    "input_ids": word_feats,
-                    "attention_mask": torch.LongTensor(word_masks),
-                }
-            char_ids = None
+        pad_input_ids, _ = pad_seq([ii["input_ids"] for ii in word_ids])
+        pad_attention_mask, _ = pad_seq([ii["attention_mask"] for ii in word_ids])
+        word_ids = {
+            "input_ids": torch.LongTensor(pad_input_ids),
+            "attention_mask": torch.LongTensor(pad_attention_mask),
+            "token_type_ids": torch.LongTensor(pad_token_type_ids),
+        }
+        char_ids = None
     else:
         # process word ids
         word_ids, _ = pad_seq(word_ids)
