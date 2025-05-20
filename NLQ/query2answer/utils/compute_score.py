@@ -43,17 +43,18 @@ def scoring(args):
     precision_ = []
     recall_ = []
     f1_score_ = []
-    for record in data:
-        gt_answer = record["answer"]
-        gen_answer = record["model_answer"]
-        precision, recall, f1_score = scorer_fun.score([gen_answer], [gt_answer])
-        record["precision"] = precision.item()
-        record["recall"] = recall.item()
-        record["f1_score"] = f1_score.item()
-        out_data.append(record)
-        precision_.append(precision)
-        recall_.append(recall)
-        f1_score_.append(f1_score)
+    with torch.no_grad():
+        for record in data:
+            gt_answer = record["answer"]
+            gen_answer = record["model_answer"]
+            precision, recall, f1_score = scorer_fun.score([gen_answer], [gt_answer])
+            record["precision"] = precision.item()
+            record["recall"] = recall.item()
+            record["f1_score"] = f1_score.item()
+            out_data.append(record)
+            precision_.append(precision.item())
+            recall_.append(recall.item())
+            f1_score_.append(f1_score.item())
     
     mean_precision = sum(precision_) / len(precision_)
     mean_recall = sum(recall_) / len(recall_)
@@ -67,7 +68,7 @@ def scoring(args):
     }
 
     with open(output_save_path, "w", encoding="utf-8") as f:
-        json.dump(out_data, f)
+        json.dump(out_data, f, indent=2)
 
 
 if __name__=="__main__":
