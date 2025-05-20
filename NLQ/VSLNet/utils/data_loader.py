@@ -85,7 +85,6 @@ def test_collate_fn(data):
         word_ids = {
             "input_ids": torch.LongTensor(pad_input_ids),
             "attention_mask": torch.LongTensor(pad_attention_mask),
-            "token_type_ids": torch.LongTensor(pad_token_type_ids),
         }
         char_ids = None
     else:
