@@ -48,7 +48,7 @@ def main(configs):
 
             inputs = processor(text=prompt, videos=torch.from_numpy(vid).to(device=device), return_tensors="pt")
             inputs = inputs.to(device)
-            out = model(**inputs, max_new_tokens=80)
+            out = model.generate(**inputs, max_new_tokens=80)
             answer = processor.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
             answer = answer.split("ASSISTANT:")[1].strip()
             out_dict = record
