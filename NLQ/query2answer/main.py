@@ -26,6 +26,7 @@ def main(configs):
         quantization_config=quantization_config,
         device_map="auto",
     )
+    model.eval()
     processor = VideoLlavaProcessor.from_pretrained("LanguageBind/Video-LLaVA-7B-hf")
 
     with open(data_path, "r", encoding="utf-8") as f:
@@ -34,24 +35,25 @@ def main(configs):
 
     output_data = []
 
-    for record in data:
-        clip_uid = record["clip_uid"]
-        query = record["query"]
-        start_time = record["predicted_start_time"]
-        end_time = record["predicted_end_time"]
-        
-        cut_clip_path = cut_clip(clips_path, clip_uid, start_time, end_time)
-        vid = prepare_clip(cut_clip_path)
-        prompt = build_prompt(query)
+    with torch.no_grad():
+        for record in data:
+            clip_uid = record["clip_uid"]
+            query = record["query"]
+            start_time = record["predicted_start_time"]
+            end_time = record["predicted_end_time"]
+            
+            cut_clip_path = cut_clip(clips_path, clip_uid, start_time, end_time)
+            vid = prepare_clip(cut_clip_path)
+            prompt = build_prompt(query)
 
-        inputs = processor(text=prompt, videos=torch.from_numpy(vid).to(device=device), return_tensors="pt")
-        inputs = inputs.to(device)
-        out = model(**inputs, max_new_tokens=80)
-        answer = processor.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
-        answer = answer.split("ASSISTANT:")[1].strip()
-        out_dict = record
-        out_dict["model_answer"] = answer
-        output_data.append(out_dict)
+            inputs = processor(text=prompt, videos=torch.from_numpy(vid).to(device=device), return_tensors="pt")
+            inputs = inputs.to(device)
+            out = model(**inputs, max_new_tokens=80)
+            answer = processor.batch_decode(out, skip_special_tokens=True, clean_up_tokenization_spaces=True)[0]
+            answer = answer.split("ASSISTANT:")[1].strip()
+            out_dict = record
+            out_dict["model_answer"] = answer
+            output_data.append(out_dict)
     
     out = {"data": output_data}
 
