@@ -125,10 +125,15 @@ def convert_ego4d_dataset(args):
         with open(save_path, "w") as file_id:
             json.dump(feature_sizes, file_id)
     else:
+        os.makedirs(args["clip_feature_save_path"], exist_ok=True)
         progress_bar = tqdm.tqdm(all_clip_video_map.items(), desc="Extracting features")
         for clip_uid, (video_uid, start_sec, end_sec) in progress_bar:
             feature_path = os.path.join(args["video_feature_read_path"], f"{clip_uid}.pt")
             feature = torch.load(feature_path)
+            feature_save_path = os.path.join(
+                args["clip_feature_save_path"], f"{clip_uid}.pt"
+            )
+            torch.save(feature, feature_save_path)
 
             feature_sizes[clip_uid] = feature.shape[0]
         save_path = os.path.join(args["clip_feature_save_path"], "feature_shapes.json")
