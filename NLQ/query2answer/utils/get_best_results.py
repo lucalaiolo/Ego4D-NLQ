@@ -3,7 +3,7 @@ import os
 
 def find_best_result(args):
     path = f"{args['model_base_dir']}/{args['name']}/{args['model_name']}_{args['task']}_{args['fv']}_{args['max_pos_len']}_{args['predictor']}/model/"
-    global_steps = [int(f.split("_")[-2]) for f in os.listdir(path=path) if "preds" in f]
+    global_steps = [int(f.split("_")[1]) for f in os.listdir(path=path) if ".t7" in f]
     best_global_step = max(global_steps)
     best_file = next(
         f for f in os.listdir(path)
